@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  VpcCidrBlock:
+    Type: String
+    Default: '10.0.0.0/16'
+    Description: 'CIDR block for the VPC. Default is 10.0.0.0/16.'
+
+Resources:
+  MyVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: 'Name'
+          Value: 'MyVPC1'
+
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway1'
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: 'InternetGateway1'
+
+  AttachGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment1'
+    Properties:
+      VpcId: !Ref MyVPC1
+      InternetGatewayId: !Ref InternetGateway1
+
+  MySecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Enable SSH access from anywhere'
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0'
+
+  PrivateSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: 'Name'
+          Value: 'PrivateSubnet'
+
+  MyEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: 't3.micro'
+      SubnetId: !Ref PrivateSubnet
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      ImageId: 'ami-0c55b159cbfafe1f0'  # Amazon Linux 2 AMI
+      KeyName: 'vockey'  # Key pair name
